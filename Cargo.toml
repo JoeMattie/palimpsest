@@ -1,0 +1,42 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/pal-core",
+    "crates/pal-store",
+    "crates/pal-index",
+    "crates/pal-analyze",
+    "crates/pal-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+pal-core = { path = "crates/pal-core" }
+pal-store = { path = "crates/pal-store" }
+pal-index = { path = "crates/pal-index" }
+pal-analyze = { path = "crates/pal-analyze" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+anyhow = "1"
+rusqlite = { version = "0.34", features = ["bundled"] }
+rayon = "1.10"
+clap = { version = "4", features = ["derive"] }
+indicatif = "0.17"
+git2 = { version = "0.20", default-features = false }
+tree-sitter = "0.25"
+tree-sitter-typescript = "0.23"
+tree-sitter-javascript = "0.23"
+tree-sitter-python = "0.23"
+tree-sitter-rust = "0.24"
+tree-sitter-go = "0.23"
+postcard = { version = "1", features = ["alloc"] }
+tempfile = "3"
+regex = "1"
+
+[profile.release]
+lto = "thin"

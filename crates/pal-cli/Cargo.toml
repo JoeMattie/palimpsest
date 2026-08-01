@@ -1,0 +1,25 @@
+[package]
+name = "pal-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "pal"
+path = "src/main.rs"
+
+[dependencies]
+pal-core = { workspace = true }
+pal-store = { workspace = true }
+pal-index = { workspace = true }
+pal-analyze = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+indicatif = { workspace = true }
+rayon = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+serde_json = { workspace = true }
