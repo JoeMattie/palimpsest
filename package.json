@@ -1,0 +1,16 @@
+{
+  "name": "@joemattie/palimpsest",
+  "version": "0.1.0",
+  "description": "History-aware impact analysis: find what else moves when a file moves, including refactored-away ghost edges",
+  "repository": "github:JoeMattie/palimpsest",
+  "license": "MIT",
+  "bin": {
+    "pal": "npm/bin.js"
+  },
+  "files": [
+    "npm/"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

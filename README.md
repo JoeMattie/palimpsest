@@ -37,11 +37,19 @@ neither signal alone can answer that.
 ## Install and use
 
 ```
+npx github:JoeMattie/palimpsest --help
+```
+
+Runs `pal` via npx: a prebuilt binary for your platform (Linux x64/arm64,
+macOS x64/arm64, Windows x64) is downloaded from the matching GitHub
+release on first run and cached. Or install with cargo:
+
+```
 cargo install --git https://github.com/JoeMattie/palimpsest pal-cli
 ```
 
-Installs the `pal` binary. Requires a Rust toolchain; from a clone,
-`cargo build --release` leaves the same binary at `target/release/pal`.
+Requires a Rust toolchain; from a clone, `cargo build --release` leaves
+the same binary at `target/release/pal`.
 
 ```
 pal index /path/to/repo        # writes .pal/index.db in the repo
