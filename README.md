@@ -1,38 +1,39 @@
 # palimpsest
 
-A tool that reads a git repo's entire history and builds a queryable
-database of how files are actually related, including relationships that no
-longer exist in the source but still govern how the code changes.
+`pal` reads a git repo's entire history and builds a queryable database of
+how files are actually related - including relationships that no longer
+exist in the source but still govern how the code changes.
 
 > *Palimpsest: a manuscript scraped clean and rewritten, where the earlier
 > text remains faintly legible underneath.*
 
-Binary: `pal`. Rust workspace, SQLite on disk at `.pal/index.db`.
+One binary (`pal`), Rust workspace, SQLite on disk at `.pal/index.db`.
 
 ## Why
 
-Three signals about "what else does this file touch," in increasing order
-of how hard they are to get any other way:
+There are three signals for "what else does this file touch," in increasing
+order of how hard they are to get any other way:
 
 1. **Live structural edges.** `a.ts` imports `b.ts` at HEAD. Exact, cheap,
-   already available from any LSP. Included because it anchors everything
-   else.
+   and any LSP will tell you the same thing. It's here because it anchors
+   everything else, not because it's novel.
 2. **Evolutionary coupling.** `parser.rs` and `fixtures/golden/` have no
    static link and change together in 71% of commits touching either.
-   Invisible to static analysis by construction.
+   Static analysis can't see this, by construction.
 3. **Ghost edges.** `encoder.ts` imported `frame.ts` until a commit
-   extracted an interface between them. The import is gone. They have
+   extracted an interface between them. The import is gone. They've
    co-changed 9 times since. The contract survived; only the analyzer's
    ability to see it died.
 
-A static edge disappearing is rarely coupling ending; it is usually
-coupling going dark. Interface extraction, dependency inversion, event
-buses, plugin registries, config-string dispatch: every one preserves the
-contract while deleting the evidence. The severance commit is therefore a
-detector for exactly the class of dependency that HEAD-time tooling cannot
-find. The discriminator between "refactored but still coupled" and
-"genuinely decoupled" is whether co-change persisted after the edge died;
-neither signal alone can answer that.
+So, here's the thing: a static edge disappearing rarely means the coupling
+ended. It usually means the coupling went dark. Interface extraction,
+dependency inversion, event buses, plugin registries, config-string
+dispatch - every one of these preserves the contract while deleting the
+evidence. That makes the severance commit a detector for exactly the class
+of dependency that HEAD-time tooling can't find. And the way you tell
+"refactored but still coupled" from "genuinely decoupled" is whether the
+co-change kept going after the edge died (neither signal can answer that
+alone, which is why the tool tracks both).
 
 ## Install and use
 
@@ -40,18 +41,18 @@ neither signal alone can answer that.
 npx github:JoeMattie/palimpsest --help
 ```
 
-Runs `pal` via npx: a prebuilt binary for your platform (Linux x64/arm64,
-macOS x64/arm64, Windows x64) is downloaded from the matching GitHub
-release on first run and cached. npm 12+ disables git dependencies by
-default; pass `--allow-git=all` before the package name to permit it.
-Or install with cargo:
+That runs `pal` through npx: a prebuilt binary for your platform (Linux
+x64/arm64, macOS x64/arm64, Windows x64) gets downloaded from the matching
+GitHub release on first run and cached. npm 12+ disables git dependencies
+by default, so you'll need `--allow-git=all` before the package name. Or
+install with cargo:
 
 ```
 cargo install --git https://github.com/JoeMattie/palimpsest pal-cli
 ```
 
-Requires a Rust toolchain; from a clone, `cargo build --release` leaves
-the same binary at `target/release/pal`.
+That one needs a Rust toolchain. From a clone, `cargo build --release`
+leaves the same binary at `target/release/pal`.
 
 ```
 pal index /path/to/repo        # writes .pal/index.db in the repo
@@ -80,8 +81,8 @@ pal export [--format json|dot|graphml]
 
 Every command takes `--json` for a stable, versioned, compact schema with a
 `caveats` array (staleness warnings and the like), and `--db` to point at
-an index elsewhere. Paths are repo-relative; historical paths are accepted
-and resolved through the rename chain.
+an index somewhere else. Paths are repo-relative, and historical paths work
+too - they resolve through the rename chain.
 
 Exit codes: `0` ok, `2` db missing, `3` file not found in history, `4`
 schema version mismatch.
@@ -89,32 +90,34 @@ schema version mismatch.
 ## How it works
 
 - **History walk** (git2, isolated behind a `Vcs` trait so a gix backend
-  can be swapped in): first-parent by default, oldest to newest, rename
-  detection on. File identity survives rename chains and delete-then-re-add
-  (blob-identical or within a 90-day window).
+  can be swapped in later): first-parent by default, oldest to newest,
+  rename detection on. File identity survives rename chains and
+  delete-then-re-add (blob-identical, or within a 90-day window).
 - **Parsing**: tree-sitter, one file at a time, no build environment
-  needed, because historical checkouts are not buildable. Parses are cached
-  by blob oid; the same `README.md` blob in a thousand commits parses once,
-  ever. Languages: TypeScript/TSX, JavaScript, Python, Rust, Go, Ruby, plus
-  Markdown link and token extraction, and a line-based CoffeeScript
-  extractor (no maintained tree-sitter grammar exists for it). Adding a
-  language means adding a query file under `grammars/` and a resolver arm.
+  needed - historical checkouts aren't buildable, so anything that needs a
+  build was never an option. Parses are cached by blob oid; the same
+  `README.md` blob in a thousand commits parses once, ever. Languages:
+  TypeScript/TSX, JavaScript, Python, Rust, Go, and Ruby, plus Markdown
+  link and token extraction, and a line-based CoffeeScript extractor (no
+  maintained tree-sitter grammar exists for it). Adding a language means a
+  query file under `grammars/` and a resolver arm.
 - **Resolution ladder** (most exact first): relative path, config-aware
   roots (go.mod module, Cargo workspace member names, ESM `.js` to `.ts`
-  mapping), unique symbol name (ambiguity drops the edge rather than
-  guessing), doc refs. Each edge records its resolution quality.
+  mapping), unique symbol name, doc refs. Ambiguity drops the edge rather
+  than guessing, and each edge records its resolution quality.
 - **Commit classification**: commits touching more than `max-commit-files`
   files are excluded from co-change; import-only churn (barrel reshuffles,
   alias migrations) is detected per-file and per-commit; mechanical commits
-  may not create ghosts but do update the live edge set. All decisions are
-  recorded as flags so different thresholds can be re-derived.
+  can't create ghosts but do update the live edge set. Every decision is
+  recorded as a flag, so different thresholds can be re-derived without
+  reindexing from scratch.
 - **Co-change**: commit weight `1/n_files`, recency decay with a one-year
-  half-life, and lift over chance rather than raw counts, so `package.json`
-  does not top every query.
-- **Ghosts**: an edge whose latest interval closed, not by a mechanical
-  commit, both endpoints alive, that lived at least 90 days, and whose
-  endpoints co-changed at least twice since with confidence at least 0.25.
-  The post-severance condition is a gate, not a score term.
+  half-life, and lift over chance rather than raw counts - that last one is
+  what keeps `package.json` from topping every query.
+- **Ghosts**: an edge whose latest interval closed (not by a mechanical
+  commit), both endpoints still alive, that lived at least 90 days, and
+  whose endpoints co-changed at least twice since with confidence of at
+  least 0.25. The post-severance condition is a gate, not a score term.
 
 ## Validation
 
@@ -127,19 +130,19 @@ lint-storm commit (`cargo test`). Observed on real repos:
 | Deep-Live-Cam (Python) | 412 | 101 | ~10s | 88% |
 | authorbot (TS monorepo) | 222 | 902 | ~10s | 68% |
 
-The back-testing protocol from the plan (hold out six months, measure
-precision@5 / recall@10 / MRR of `blast` against actual future co-commits,
-versus live-graph-only, raw-count, and same-directory baselines) is
-specified in `PALIMPSEST_PLAN.md` section 9 and not yet automated.
+There's a back-testing protocol designed but not yet automated: hold out
+six months of history, then measure precision@5, recall@10, and MRR of
+`blast` against the co-commits that actually happened, versus
+live-graph-only, raw-count, and same-directory baselines.
 
 ## Not built yet
 
-- `pal serve` and the `pal-viz` views (strata, scrubber, archaeology, DSM,
-  drift): plan phase P6.
-- Embeddings and semantic `pal search` (`fastembed` feature): plan P7. The
-  tool is fully useful without them by design.
-- tsconfig `paths` aliases in the resolver (bare-specifier imports through
-  `@/...` aliases resolve only when they happen to match a repo path).
+- `pal serve` and the visualization views (strata, scrubber, archaeology,
+  DSM, drift).
+- Embeddings and semantic `pal search`. The tool is fully useful without
+  them, on purpose.
+- tsconfig `paths` aliases in the resolver (imports through `@/...` aliases
+  only resolve when they happen to match a repo path).
 
 ## Layout
 
