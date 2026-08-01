@@ -42,7 +42,9 @@ npx github:JoeMattie/palimpsest --help
 
 Runs `pal` via npx: a prebuilt binary for your platform (Linux x64/arm64,
 macOS x64/arm64, Windows x64) is downloaded from the matching GitHub
-release on first run and cached. Or install with cargo:
+release on first run and cached. npm 12+ disables git dependencies by
+default; pass `--allow-git=all` before the package name to permit it.
+Or install with cargo:
 
 ```
 cargo install --git https://github.com/JoeMattie/palimpsest pal-cli
