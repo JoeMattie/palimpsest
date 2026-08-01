@@ -89,7 +89,8 @@ pub fn resolve_file(
         // ratio; a bare `torch` or `react` that stays unresolved is an
         // external dependency, not an indexing failure.
         let internal_shaped = match lang {
-            Lang::Ts | Lang::Tsx | Lang::Js | Lang::Py => spec.starts_with('.'),
+            Lang::Ts | Lang::Tsx | Lang::Js | Lang::Py | Lang::Coffee => spec.starts_with('.'),
+            Lang::Rb => spec.starts_with("rel:"),
             Lang::Rust => {
                 spec.starts_with("mod:")
                     || matches!(
@@ -110,8 +111,9 @@ pub fn resolve_file(
             Lang::Md => false,
         };
         let target = match lang {
-            Lang::Ts | Lang::Tsx | Lang::Js => resolve_js(ctx, src_path, spec),
+            Lang::Ts | Lang::Tsx | Lang::Js | Lang::Coffee => resolve_js(ctx, src_path, spec),
             Lang::Py => resolve_py(ctx, src_path, spec),
+            Lang::Rb => resolve_ruby(ctx, src_path, spec),
             Lang::Rust => resolve_rust(ctx, src_path, spec),
             Lang::Go => {
                 let targets = resolve_go(ctx, src_path, spec);
@@ -194,8 +196,10 @@ fn unique_symbol(ctx: &ResolveCtx, src: FileId, name: &str) -> Option<FileId> {
 }
 
 fn resolve_js(ctx: &ResolveCtx, src_path: &str, spec: &str) -> Option<(FileId, Resolution)> {
-    const EXTS: &[&str] = &[".ts", ".tsx", ".d.ts", ".js", ".jsx", ".mjs", ".cjs"];
-    const INDEXES: &[&str] = &["index.ts", "index.tsx", "index.js", "index.jsx"];
+    const EXTS: &[&str] = &[
+        ".ts", ".tsx", ".d.ts", ".js", ".jsx", ".mjs", ".cjs", ".coffee",
+    ];
+    const INDEXES: &[&str] = &["index.ts", "index.tsx", "index.js", "index.jsx", "index.coffee"];
     let try_base = |base: &str, res: Resolution| -> Option<(FileId, Resolution)> {
         let base = normalize_path(base);
         if let Some(id) = ctx.live.get(&base) {
@@ -207,6 +211,8 @@ fn resolve_js(ctx: &ResolveCtx, src_path: &str, spec: &str) -> Option<(FileId, R
             (".jsx", ".tsx"),
             (".mjs", ".mts"),
             (".cjs", ".cts"),
+            // CoffeeScript compiles to .js; specifiers name the output.
+            (".js", ".coffee"),
         ] {
             if let Some(stem) = base.strip_suffix(from) {
                 if let Some(id) = ctx.live.get(&format!("{stem}{to}")) {
@@ -301,6 +307,30 @@ fn python_package_root(ctx: &ResolveCtx, src_path: &str) -> Option<String> {
         }
     }
     root
+}
+
+fn resolve_ruby(ctx: &ResolveCtx, src_path: &str, spec: &str) -> Option<(FileId, Resolution)> {
+    let try_base = |base: &str, res: Resolution| -> Option<(FileId, Resolution)> {
+        let base = normalize_path(base);
+        if base.is_empty() {
+            return None;
+        }
+        let cand = if base.ends_with(".rb") {
+            base
+        } else {
+            format!("{base}.rb")
+        };
+        ctx.live.get(&cand).map(|id| (*id, res))
+    };
+    if let Some(rest) = spec.strip_prefix("rel:") {
+        return try_base(&join(dir_of(src_path), rest), Resolution::PathExact);
+    }
+    // Plain require: the load path is not knowable from the tree, so try the
+    // conventional roots. lib/ first (gems and most apps), then repo root.
+    if let Some(hit) = try_base(&format!("lib/{spec}"), Resolution::PathExact) {
+        return Some(hit);
+    }
+    try_base(spec, Resolution::Heuristic)
 }
 
 fn resolve_rust(ctx: &ResolveCtx, src_path: &str, spec: &str) -> Option<(FileId, Resolution)> {
@@ -489,6 +519,9 @@ mod tests {
         live.insert("src/lib.rs".to_string(), FileId(7));
         live.insert("src/codec/mod.rs".to_string(), FileId(8));
         live.insert("src/codec/frame.rs".to_string(), FileId(9));
+        live.insert("lib/codec/frame.rb".to_string(), FileId(10));
+        live.insert("lib/codec/encoder.rb".to_string(), FileId(11));
+        live.insert("src/wire.coffee".to_string(), FileId(12));
         let mut symbols: HashMap<String, HashSet<FileId>> = HashMap::new();
         symbols.insert("FrameCodec".to_string(), HashSet::from([FileId(2)]));
         symbols.insert(
@@ -558,6 +591,53 @@ mod tests {
         assert_eq!(
             resolve_rust(&ctx, "src/lib.rs", "mod:codec"),
             Some((FileId(8), Resolution::PathExact))
+        );
+    }
+
+    #[test]
+    fn ruby_relative_and_load_path() {
+        let (live, symbols) = ctx_fixture();
+        let rc = HashMap::new();
+        let ctx = ResolveCtx {
+            live: &live,
+            symbols: &symbols,
+            go_module: None,
+            rust_crates: &rc,
+        };
+        assert_eq!(
+            resolve_ruby(&ctx, "lib/codec/encoder.rb", "rel:frame"),
+            Some((FileId(10), Resolution::PathExact))
+        );
+        assert_eq!(
+            resolve_ruby(&ctx, "lib/codec/encoder.rb", "codec/frame"),
+            Some((FileId(10), Resolution::PathExact))
+        );
+        assert_eq!(resolve_ruby(&ctx, "lib/codec/encoder.rb", "json"), None);
+    }
+
+    #[test]
+    fn coffee_resolves_through_js_rules() {
+        let (live, symbols) = ctx_fixture();
+        let rc = HashMap::new();
+        let ctx = ResolveCtx {
+            live: &live,
+            symbols: &symbols,
+            go_module: None,
+            rust_crates: &rc,
+        };
+        // .coffee target, and the compiled-name form naming the .js output.
+        assert_eq!(
+            resolve_js(&ctx, "src/encoder.coffee", "./wire"),
+            Some((FileId(12), Resolution::PathExact))
+        );
+        assert_eq!(
+            resolve_js(&ctx, "src/encoder.coffee", "./wire.js"),
+            Some((FileId(12), Resolution::PathExact))
+        );
+        // JS-family precedence is unchanged for .ts sources.
+        assert_eq!(
+            resolve_js(&ctx, "src/encoder.ts", "./frame"),
+            Some((FileId(2), Resolution::PathExact))
         );
     }
 

@@ -85,9 +85,10 @@ schema version mismatch.
 - **Parsing**: tree-sitter, one file at a time, no build environment
   needed, because historical checkouts are not buildable. Parses are cached
   by blob oid; the same `README.md` blob in a thousand commits parses once,
-  ever. Languages: TypeScript/TSX, JavaScript, Python, Rust, Go, plus
-  Markdown link and token extraction. Adding a language means adding a
-  query file under `grammars/` and a resolver arm.
+  ever. Languages: TypeScript/TSX, JavaScript, Python, Rust, Go, Ruby, plus
+  Markdown link and token extraction, and a line-based CoffeeScript
+  extractor (no maintained tree-sitter grammar exists for it). Adding a
+  language means adding a query file under `grammars/` and a resolver arm.
 - **Resolution ladder** (most exact first): relative path, config-aware
   roots (go.mod module, Cargo workspace member names, ESM `.js` to `.ts`
   mapping), unique symbol name (ambiguity drops the edge rather than
