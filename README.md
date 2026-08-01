@@ -37,7 +37,13 @@ neither signal alone can answer that.
 ## Install and use
 
 ```
-cargo build --release          # binary at target/release/pal
+cargo install --git https://github.com/JoeMattie/palimpsest pal-cli
+```
+
+Installs the `pal` binary. Requires a Rust toolchain; from a clone,
+`cargo build --release` leaves the same binary at `target/release/pal`.
+
+```
 pal index /path/to/repo        # writes .pal/index.db in the repo
 pal blast src/encoder.ts       # ranked "what else is affected"
 ```
