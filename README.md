@@ -87,6 +87,20 @@ too - they resolve through the rename chain.
 Exit codes: `0` ok, `2` db missing, `3` file not found in history, `4`
 schema version mismatch.
 
+## Claude Code skill
+
+The repo doubles as a Claude Code plugin marketplace shipping one skill,
+which teaches Claude to query the pal index before editing files in an
+indexed repo. Inside Claude Code:
+
+```
+/plugin marketplace add JoeMattie/palimpsest
+/plugin install palimpsest@palimpsest
+```
+
+Or skip the plugin system and copy `skills/palimpsest/` into
+`~/.claude/skills/`.
+
 ## How it works
 
 - **History walk** (git2, isolated behind a `Vcs` trait so a gix backend

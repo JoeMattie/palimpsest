@@ -1,0 +1,12 @@
+{
+  "name": "palimpsest",
+  "description": "History-aware impact analysis: find what else moves when a file moves, including refactored-away ghost edges",
+  "version": "0.1.2",
+  "author": {
+    "name": "Joe Mattie",
+    "url": "https://github.com/JoeMattie"
+  },
+  "homepage": "https://github.com/JoeMattie/palimpsest",
+  "repository": "https://github.com/JoeMattie/palimpsest",
+  "license": "MIT"
+}

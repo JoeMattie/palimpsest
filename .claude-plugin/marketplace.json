@@ -1,0 +1,19 @@
+{
+  "name": "palimpsest",
+  "owner": {
+    "name": "Joe Mattie",
+    "url": "https://github.com/JoeMattie"
+  },
+  "description": "Marketplace for the palimpsest skill: query a repo's pal index for co-change coupling and ghost edges before editing",
+  "plugins": [
+    {
+      "name": "palimpsest",
+      "source": "./",
+      "description": "History-aware impact analysis: find what else moves when a file moves, including refactored-away ghost edges",
+      "version": "0.1.2",
+      "author": {
+        "name": "Joe Mattie"
+      }
+    }
+  ]
+}
