@@ -58,6 +58,7 @@ leaves the same binary at `target/release/pal`.
 ```
 pal index /path/to/repo        # writes .pal/index.db in the repo
 pal blast src/encoder.ts       # ranked "what else is affected"
+pal serve                      # graph in a browser at 127.0.0.1:7250
 ```
 
 Commands:
@@ -77,8 +78,14 @@ pal drift                   # stale docs
 pal hotspots [--by churn|coupling|ghosts]
 pal search <QUERY>          # FTS5 over commit messages
 pal stats                   # index health
+pal serve [--port 7250]     # interactive blast-graph visualizer
 pal export [--format json|dot|graphml]
 ```
+
+`pal serve` hosts a self-contained local page (no external requests): the
+live import graph and co-change coupling as a force layout, with per-file
+"moves with" evidence and a hidden-coupling panel. Data is recomputed on
+every reload, so it tracks a re-index without a restart.
 
 Every command takes `--json` for a stable, versioned, compact schema with a
 `caveats` array (staleness warnings and the like), and `--db` to point at
@@ -152,8 +159,8 @@ live-graph-only, raw-count, and same-directory baselines.
 
 ## Not built yet
 
-- `pal serve` and the visualization views (strata, scrubber, archaeology,
-  DSM, drift).
+- The remaining `pal serve` views (strata, scrubber, archaeology, DSM,
+  drift). The blast graph shipped first.
 - Embeddings and semantic `pal search`. The tool is fully useful without
   them, on purpose.
 - tsconfig `paths` aliases in the resolver (imports through `@/...` aliases

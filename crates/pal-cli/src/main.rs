@@ -5,6 +5,7 @@
 //! history, 4 schema version mismatch.
 
 mod human;
+mod serve;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -120,6 +121,12 @@ enum Command {
     },
     /// Index health: coverage, unresolved-edge ratio, excluded share
     Stats,
+    /// Serve the interactive blast-graph visualizer on localhost
+    Serve {
+        /// Port to bind on 127.0.0.1 (0 picks a free port)
+        #[arg(long, default_value_t = 7250)]
+        port: u16,
+    },
     /// Dump the graph for external tools
     Export {
         #[arg(long, default_value = "json", value_parser = ["json", "dot", "graphml"])]
@@ -285,6 +292,12 @@ fn run_query(cli: &Cli, cmd: &Command) -> Result<()> {
         Command::Stats => {
             let out = query::stats(&store)?;
             emit_with_caveats(cli, &out, &caveats, human::stats)?;
+        }
+        Command::Serve { port } => {
+            for c in &caveats {
+                eprintln!("note: {c}");
+            }
+            serve::serve(&store, &db, *port)?;
         }
         Command::Export { format } => {
             export(&store, format)?;

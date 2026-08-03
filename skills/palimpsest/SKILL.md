@@ -52,6 +52,8 @@ Other commands as needed:
 - `pal search <QUERY>`: full-text over commit messages.
 - `pal stats`: index health. Look at `unresolved_ratio` and `excluded_pct`
   to calibrate how much to trust edge-based evidence.
+- `pal serve`: local browser visualizer for the human. Suggest it when they
+  want to see the graph; never scrape it for context (use the queries).
 
 ## Reading provenance
 
