@@ -127,8 +127,8 @@ lint-storm commit (`cargo test`). Observed on real repos:
 
 | repo | commits | files | index time | resolved internal imports |
 |---|---|---|---|---|
-| Deep-Live-Cam (Python) | 412 | 101 | ~10s | 88% |
-| authorbot (TS monorepo) | 222 | 902 | ~10s | 68% |
+| a Python application | 412 | 101 | ~10s | 88% |
+| a TypeScript monorepo | 222 | 902 | ~10s | 68% |
 
 There's a back-testing protocol designed but not yet automated: hold out
 six months of history, then measure precision@5, recall@10, and MRR of
