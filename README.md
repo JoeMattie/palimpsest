@@ -38,14 +38,15 @@ alone, which is why the tool tracks both).
 ## Install and use
 
 ```
-npx github:JoeMattie/palimpsest --help
+npx @joemattie/palimpsest --help
 ```
 
 That runs `pal` through npx: a prebuilt binary for your platform (Linux
 x64/arm64, macOS x64/arm64, Windows x64) gets downloaded from the matching
-GitHub release on first run and cached. npm 12+ disables git dependencies
-by default, so you'll need `--allow-git=all` before the package name. Or
-install with cargo:
+GitHub release on first run and cached. Running straight from the repo
+works too (`npx github:JoeMattie/palimpsest`), though npm 12+ disables git
+dependencies by default, so that form needs `--allow-git=all` before the
+package name. Or install with cargo:
 
 ```
 cargo install --git https://github.com/JoeMattie/palimpsest pal-cli
